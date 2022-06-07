@@ -1,27 +1,19 @@
 package com.bezkoder.spring.jpa.h2.controller;
 
+import com.bezkoder.spring.jpa.h2.model.Tutorial;
+import com.bezkoder.spring.jpa.h2.repository.TutorialRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.bezkoder.spring.jpa.h2.model.Tutorial;
-import com.bezkoder.spring.jpa.h2.repository.TutorialRepository;
-
-@CrossOrigin(origins = "http://localhost:8081")
+@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api")
 public class TutorialController {
@@ -52,9 +44,16 @@ public class TutorialController {
 	@GetMapping("/tutorials/{id}")
 	public ResponseEntity<Tutorial> getTutorialById(@PathVariable("id") long id) {
 		Optional<Tutorial> tutorialData = tutorialRepository.findById(id);
-
+		int hash = tutorialRepository.findById(id).hashCode();
+//		EntityTag etag = new EntityTag(tutorialRepository.findById(id).hashCode()+"");
+//		System.out.println("etag : "+etag);
 		if (tutorialData.isPresent()) {
-			return new ResponseEntity<>(tutorialData.get(), HttpStatus.OK);
+			CacheControl cacheControl = CacheControl.maxAge(30, TimeUnit.MINUTES);
+			return  ResponseEntity.ok()
+					.cacheControl(cacheControl)
+//					.eTag(String.valueOf(tutorialData.get().hashCode()))
+					.body(tutorialData.get());
+//			return rp;
 		} else {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
